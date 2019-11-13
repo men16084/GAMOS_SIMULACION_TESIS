@@ -1,0 +1,69 @@
+### Inicio del código
+### Configuración de verbosidad en textit{silent}, ver sección (2.6)
+/tracking/verbose -1 
+
+### Geometría desde archivo de texto, ver sección (2.2.1)
+/gamos/geometry GmGeometryFromText 
+/gamos/setParam GmGeometryFromText:FileName ContruyendoGeometria.geom 
+/gamos/setParam GmReadPhantomGeometry:Phantom:FileName ContruyendoGeometria.geom 
+
+### Activación de física electromagnética y generador, ver sección (2.3) y (2.5)
+/gamos/physicsList GmEMPhysics 
+/gamos/generator GmGenerator 
+
+### Generación de cortes (region), ver sección (2.5.1.1)
+#/gamos/geometry/createRegion Pared ParedConcreto 
+#/gamos/geometry/createRegion FantomaAcrilico CajaFantoma 
+#/gamos/geometry/createRegion FantomaAgua contenedor_fantoma 
+#/gamos/geometry/createRegion Aire world 
+#/gamos/physics/setCuts Pared 100.*um 100.*um 100.*um 100.*um 
+#/gamos/physics/setCuts FantomaAcrilico 100.*um 100.*um 100.*um 100.*um 
+#/gamos/physics/setCuts FantomaAgua 100.*um 100.*um 100.*um 100.*um 
+#/gamos/physics/setCuts Aire 100.*um 100.*um 100.*um 100.*um 
+
+### Generacion de cortes (energia), ver sección (2.5.1.2)
+/gamos/userAction GmCutsEnergy2RangeUA 
+#/gamos/physics/ECuts2RangeCuts G4_AIR 990.*eV gamma 
+#/gamos/physics/ECuts2RangeCuts "NIST_Concrete, Barite (TYPE BA)" 5.31198*keV gamma 
+#/gamos/physics/ECuts2RangeCuts "NIST_Polymethyl Methacrylate" 1.1173*keV gamma 
+#/gamos/physics/ECuts2RangeCuts G4_WATER 1.10981*keV gamma 
+
+### Inicio de la información para la corrida
+/run/initialize 
+### Fuente de radiación, ver sección (2.3.1.2)
+/gamos/generator/addIsotopeSource fuenteIO Cs137 660.*keV 
+/gamos/generator/positionDist fuenteIO GmGenerDistPositionPoint 0 3280 700 
+/gamos/generator/directionDist fuenteIO GmGenerDistDirectionCone 0. -1. 0. 0.155862 
+
+### Impresión del árbol de volumenes. Esta línea de codigo es opcional, ver sección (2.2.3)
+/gamos/geometry/printVolumeTree 2 
+
+###Filtros y Limites de usuario para optimización de cómputo, ver sección (2.4.1) y (2.7.2) 
+/gamos/filter AceptStepP GmElectronFilter 
+/gamos/filter AceptStepS GmSecondaryFilter 
+
+/gamos/userAction GmKillAtStackingActionUA AceptStepP 
+/gamos/userAction GmKillAtStackingActionUA AceptStepS 
+
+### Límites de usuario, ver sección (2.7.1)
+/gamos/physics/userLimits/setMaxTrkLen LimiteR world gamma 3.e+03 
+
+###Dosis y energía depositada en el fantoma, ver sección (2.4.2) 
+/gamos/scoring/createMFDetector DoseDet fantoma 
+
+/gamos/scoring/addScorer2MFD EnergyScorer GmG4PSEnergyDeposit DoseDet 
+#/gamos/scoring/addPrinter2Scorer GmPSPrinterTextFile EnergyScorer 
+
+/gamos/scoring/addScorer2MFD DoseScorer GmG4PSDoseDeposit DoseDet 
+/gamos/scoring/addPrinter2Scorer GmPSPrinter3ddose DoseScorer 
+/gamos/scoring/addPrinter2Scorer GmPSPrinterSqdose DoseScorer 
+/gamos/scoring/addPrinter2Scorer RTPSPDoseHistos DoseScorer 
+
+### Visualización 3D (Esta parte es opcional, puede excluirse del código sin alterar resultados) 
+/control/execute ../MY_WORK/visVRML2FILE.in 
+#/control/execute ../MY_WORK/visOGLIX.in 
+/control/execute ../MY_WORK/visVRML2FILE.in 
+/vis/scene/endOfEventAction accumulate 3000 
+
+### Número de partículas simuladas
+/run/beamOn 1000000 
